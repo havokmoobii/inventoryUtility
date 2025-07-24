@@ -12,6 +12,7 @@
 # This project is probably too simple otherwise anyway.
 
 from mapFormatter import mapFormatter
+from stageListGen import stageListGen
 
 def main():
 
@@ -25,7 +26,7 @@ def main():
         if selection == '1':
             mapFormatter()
         if selection == '2':
-            pass
+            stageListGen()
         if selection == '3':
             return
 
