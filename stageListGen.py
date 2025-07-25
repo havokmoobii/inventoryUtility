@@ -7,20 +7,21 @@
 from enum import Enum
 
 class Categories(Enum):
-    PREBUILD = 'PREBUILD'
-    OPENLOOP = 'OPEN-LOOP'
-    SERVER = 'SERVER / BILL / IT'
-    LAPTOP = 'LAPTOP'
-    NUC = 'NUC'
-    PRC = 'PRC'
-    FAN = 'FAN'
-    MBD = 'MBD'
-    MEM = 'MEM'
-    HDR = 'HDR'
-    VDO = 'VDO'
-    CAS = 'CAS'
-    POW = 'POW'
-    MISC = 'MISC'
+    PREBUILD = {0: 'PREBUILD'}
+    OPENLOOP = {1: 'OPEN-LOOP'}
+    SERVER = {2: 'SERVER / BILL / IT'}
+    LAPTOP = {3: 'LAPTOP'}
+    NUC = {4: 'NUC'}
+    PRC = {5: 'PRC'}
+    FAN = {6: 'FAN'}
+    MBD = {7: 'MBD'}
+    MEM = {8: 'MEM'}
+    HDR = {9: 'HDR'}
+    VDO = {10: 'VDO'}
+    CAS = {11: 'CAS'}
+    POW = {12: 'POW'}
+    MISC = {13: 'MISC'}
+    MAX_CATEGORIES = {14: 'Error: MAX_CATEGORIES text should not display'}
 
 class EntryStep(Enum):
     ORDER_NUMBER = 0
@@ -29,11 +30,17 @@ class EntryStep(Enum):
     ITEM_LIST = 3
     NOTES = 4
 
+BACK_COMMAND = 'back'
+QUIT_COMMAND = 'quit'
+CLEAR_COMMAND = 'clear'
+
 def stageListGen():
     staged_list = []
 
+    # To Do: Make a function to print this out exactly how the final email will be formatted.
     for category in Categories:
-        staged_list.append([category.value])
+        if category != Categories.MAX_CATEGORIES:
+            staged_list.append([category.value])
 
     while True:
 
@@ -57,6 +64,7 @@ def stageListGen():
 def entryMode(staged_list):
     entry_step = EntryStep.ORDER_NUMBER
     current_entry = {EntryStep.CATEGORY: None}
+    item_list = ''
 
     while True:
         if current_entry != {EntryStep.CATEGORY: None}:
@@ -76,7 +84,7 @@ def entryMode(staged_list):
                 if len(order_number) == 7 and order_number.isdecimal:
                     current_entry[EntryStep.ORDER_NUMBER] = order_number
                     entry_step = EntryStep.CATEGORY
-                elif order_number.lower() == 'back' or order_number.lower() == 'quit':
+                elif order_number.lower() == BACK_COMMAND or order_number.lower() == QUIT_COMMAND:
                     return
                 continue
 
@@ -110,9 +118,9 @@ def entryMode(staged_list):
                 elif category == '6':
                     current_entry[EntryStep.CATEGORY] = None
                     entry_step = EntryStep.DATE
-                elif category.lower() == 'back':
+                elif category.lower() == BACK_COMMAND:
                     entry_step = EntryStep.ORDER_NUMBER
-                elif category.lower() == 'quit':
+                elif category.lower() == QUIT_COMMAND:
                     return
                 continue
 
@@ -120,3 +128,49 @@ def entryMode(staged_list):
                 # I could be strict with the format on this, but this tool is for my own use.
                 # So I wont.
                 date = input('Enter the date that the order was created: ')
+                
+                if date.lower() == BACK_COMMAND:
+                    entry_step = EntryStep.CATEGORY
+                elif date.lower() == QUIT_COMMAND:
+                    return
+                else:
+                    current_entry[EntryStep.DATE] = date
+                continue
+
+            case EntryStep.ITEM_LIST:
+                print('Enter the items this order is staged for one at a time.')
+                print('Enter "clear" to start this step over.')
+                current_item = input('Enter nothing to move on to the next step: ')
+
+                if current_item.lower() == CLEAR_COMMAND:
+                    item_list = ''
+                elif current_item.lower() == BACK_COMMAND:
+                    entry_step = EntryStep.DATE
+                    item_list = ''
+                elif current_item.lower() == QUIT_COMMAND:
+                    return
+                elif current_item == '':
+                    current_entry[EntryStep.ITEM_LIST] = item_list
+                    entry_step = EntryStep.NOTES
+                else:
+                    if item_list == '':
+                        item_list += current_item
+                    else: 
+                        item_list += f', {current_item}'
+                continue
+
+            case EntryStep.NOTES:
+                notes = input('Enter any additional notes about the order: ')
+
+                if current_item.lower() == BACK_COMMAND:
+                    entry_step = EntryStep.DATE
+                elif current_item.lower() == QUIT_COMMAND:
+                    return
+                else:
+                    current_entry[EntryStep.NOTES] = notes
+                    staged_list[current_entry[EntryStep.CATEGORY]].append(current_entry)
+                    return
+                continue
+
+def assign_category(first_item):
+    pass

@@ -8,9 +8,6 @@
 # Tool 2: Staged List Email Generator: A tool that takes order information
 # and missing parts and sorts it into a list for my biweekly emails.
 
-# Idea: Make a web version I can host on github so I can realistically use this at work. 
-# This project is probably too simple otherwise anyway.
-
 from mapFormatter import mapFormatter
 from stageListGen import stageListGen
 
