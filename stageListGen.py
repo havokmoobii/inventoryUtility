@@ -7,21 +7,21 @@
 from enum import Enum
 
 class Categories(Enum):
-    PREBUILD = {0: 'PREBUILD'}
-    OPENLOOP = {1: 'OPEN-LOOP'}
-    SERVER = {2: 'SERVER / BILL / IT'}
-    LAPTOP = {3: 'LAPTOP'}
-    NUC = {4: 'NUC'}
-    PRC = {5: 'PRC'}
-    FAN = {6: 'FAN'}
-    MBD = {7: 'MBD'}
-    MEM = {8: 'MEM'}
-    HDR = {9: 'HDR'}
-    VDO = {10: 'VDO'}
-    CAS = {11: 'CAS'}
-    POW = {12: 'POW'}
-    MISC = {13: 'MISC'}
-    MAX_CATEGORIES = {14: 'Error: MAX_CATEGORIES text should not display'}
+    PREBUILD = (0, 'PREBUILD')
+    OPENLOOP = (1, 'OPEN-LOOP')
+    SERVER = (2, 'SERVER / BILL / IT')
+    LAPTOP = (3, 'LAPTOP')
+    NUC = (4, 'NUC')
+    PRC = (5, 'PRC')
+    FAN = (6, 'FAN')
+    MBD = (7, 'MBD')
+    MEM = (8, 'MEM')
+    HDR = (9, 'HDR')
+    VDO = (10, 'VDO')
+    CAS = (11, 'CAS')
+    POW = (12, 'POW')
+    MISC = (13, 'MISC')
+    MAX_CATEGORIES = (14, 'Error: MAX_CATEGORIES text should not display.')
 
 class EntryStep(Enum):
     ORDER_NUMBER = 0
@@ -33,6 +33,9 @@ class EntryStep(Enum):
 BACK_COMMAND = 'back'
 QUIT_COMMAND = 'quit'
 CLEAR_COMMAND = 'clear'
+CAT_CODE_LENGTH = 3
+CATEGORIES_INDEX_INDEX = 0
+CATEGORIES_TEXT_INDEX = 1
 
 def stageListGen():
     staged_list = []
@@ -63,12 +66,17 @@ def stageListGen():
 
 def entryMode(staged_list):
     entry_step = EntryStep.ORDER_NUMBER
-    current_entry = {EntryStep.CATEGORY: None}
+    current_entry = {EntryStep.ORDER_NUMBER: None,
+                     EntryStep.CATEGORY: None,
+                     EntryStep.DATE: None,
+                     EntryStep.ITEM_LIST: None,
+                     EntryStep.NOTES: None,
+                     }
     item_list = ''
 
     while True:
-        if current_entry != {EntryStep.CATEGORY: None}:
-            print(f'\n{current_entry}')
+        if current_entry[EntryStep.ORDER_NUMBER] != None:
+            print(f'\nCurrent Entry: {get_entry_text(current_entry)}')
 
         match(entry_step):
             case EntryStep.ORDER_NUMBER:
@@ -90,11 +98,11 @@ def entryMode(staged_list):
 
             case EntryStep.CATEGORY:
                 print('\nOrder Category\n')
-                print(f'1. {Categories.PREBUILD.value}')
-                print(f'2. {Categories.OPENLOOP.value}')
-                print(f'3. {Categories.SERVER.value}')
-                print(f'4. {Categories.LAPTOP.value}')
-                print(f'5. {Categories.NUC.value}')
+                print(f'1. {Categories.PREBUILD.value[CATEGORIES_TEXT_INDEX]}')
+                print(f'2. {Categories.OPENLOOP.value[CATEGORIES_TEXT_INDEX]}')
+                print(f'3. {Categories.SERVER.value[CATEGORIES_TEXT_INDEX]}')
+                print(f'4. {Categories.LAPTOP.value[CATEGORIES_TEXT_INDEX]}')
+                print(f'5. {Categories.NUC.value[CATEGORIES_TEXT_INDEX]}')
                 print('6. Other\n')
 
                 category = input('Enter the category number: ')
@@ -127,7 +135,7 @@ def entryMode(staged_list):
             case EntryStep.DATE:
                 # I could be strict with the format on this, but this tool is for my own use.
                 # So I wont.
-                date = input('Enter the date that the order was created: ')
+                date = input('\nEnter the date that the order was created: ')
                 
                 if date.lower() == BACK_COMMAND:
                     entry_step = EntryStep.CATEGORY
@@ -135,42 +143,88 @@ def entryMode(staged_list):
                     return
                 else:
                     current_entry[EntryStep.DATE] = date
+                    entry_step = EntryStep.ITEM_LIST
                 continue
 
             case EntryStep.ITEM_LIST:
-                print('Enter the items this order is staged for one at a time.')
+                print('\nEnter the items this order is staged for one at a time.')
                 print('Enter "clear" to start this step over.')
                 current_item = input('Enter nothing to move on to the next step: ')
 
                 if current_item.lower() == CLEAR_COMMAND:
                     item_list = ''
+                    # Reset category if it is one that is determined at this step.
+                    if (current_entry[EntryStep.CATEGORY] != Categories.PREBUILD and
+                    current_entry[EntryStep.CATEGORY] != Categories.OPENLOOP and
+                    current_entry[EntryStep.CATEGORY] != Categories.SERVER and
+                    current_entry[EntryStep.CATEGORY] != Categories.LAPTOP and
+                    current_entry[EntryStep.CATEGORY] != Categories.NUC):
+                        current_entry[EntryStep.CATEGORY] = None
                 elif current_item.lower() == BACK_COMMAND:
                     entry_step = EntryStep.DATE
-                    item_list = ''
                 elif current_item.lower() == QUIT_COMMAND:
                     return
                 elif current_item == '':
-                    current_entry[EntryStep.ITEM_LIST] = item_list
                     entry_step = EntryStep.NOTES
                 else:
-                    if item_list == '':
-                        item_list += current_item
-                    else: 
-                        item_list += f', {current_item}'
+                    if len(current_item) < CAT_CODE_LENGTH:
+                        print(f'\nError: Entry must be at least {CAT_CODE_LENGTH} characters long.')
+                    else:
+                        if item_list == '':
+                            item_list += current_item
+                            if current_entry[EntryStep.CATEGORY] == None:
+                                current_entry[EntryStep.CATEGORY] = assign_category(item_list[:CAT_CODE_LENGTH])
+                        else: 
+                            item_list += f', {current_item}'    
+                        current_entry[EntryStep.ITEM_LIST] = item_list
                 continue
 
             case EntryStep.NOTES:
-                notes = input('Enter any additional notes about the order: ')
+                notes = input('\nEnter any additional notes about the order: ')
 
-                if current_item.lower() == BACK_COMMAND:
-                    entry_step = EntryStep.DATE
-                elif current_item.lower() == QUIT_COMMAND:
+                if notes.lower() == BACK_COMMAND:
+                    entry_step = EntryStep.ITEM_LIST
+                elif notes.lower() == QUIT_COMMAND:
                     return
                 else:
                     current_entry[EntryStep.NOTES] = notes
-                    staged_list[current_entry[EntryStep.CATEGORY]].append(current_entry)
+                    print(current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX])
+                    staged_list[current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX]].append(current_entry)
                     return
                 continue
 
 def assign_category(first_item):
-    pass
+        # Apparantly you can't access individual items inside tuples that are part of an Enum in a match statement?
+    match(first_item):
+        case 'PRC':
+            return Categories.PRC
+        case 'FAN':
+            return Categories.FAN
+        case 'MBD':
+            return Categories.MBD
+        case 'MEM':
+            return Categories.MEM
+        case 'HDR':
+            return Categories.HDR
+        case 'VDO':
+            return Categories.VDO
+        case 'CAS':
+            return Categories.CAS
+        case 'POW':
+            return Categories.POW
+    return Categories.MISC
+
+def get_entry_text(current_entry):
+    output = ""
+    if current_entry[EntryStep.ORDER_NUMBER] != None:
+        output += f'{current_entry[EntryStep.ORDER_NUMBER]}'
+    if current_entry[EntryStep.DATE] != None:
+        output += f' - {current_entry[EntryStep.DATE]}'
+    if current_entry[EntryStep.ITEM_LIST] != None:
+        output += f' - {current_entry[EntryStep.ITEM_LIST]}'
+    if current_entry[EntryStep.NOTES] != None:
+        output += f' - {current_entry[EntryStep.NOTES]}'
+    if output == "":
+        raise Exception("Error: get_entry_text should not be called with an dict full of Nones")
+    return output
+    
