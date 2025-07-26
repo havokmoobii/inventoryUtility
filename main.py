@@ -16,7 +16,7 @@ def main():
     while True:
         print('\nInventory Utility\n')
         print('1. Map Formatter')
-        print('2. Staged List Email Generator - NYI')
+        print('2. Staged List Email Generator')
         print('3. Exit')
         selection = input('\nEnter the number of your selection: ')
         

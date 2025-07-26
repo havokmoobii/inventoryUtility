@@ -42,6 +42,6 @@ def mapFormatter():
 
     # I sometimes remove orders from the list after this stage, so I don't want to directly
     # convert it to a pdf yet.
-    print("Formatting Complete. Copy the above list into Word")
+    print("Formatting Complete. Copy the above list into Word\n")
 
     input('Press enter to return to the menu: ')
