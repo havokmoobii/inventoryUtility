@@ -4,6 +4,16 @@
 
 # Staged list will build a list of lists of dictionaries.
 
+
+
+
+# Next Time: Make the list display as it should. Make each step in the current entry process its own function.
+# Idea: Make the list save itself to a file regularly, so progress cannot be lost.
+
+
+
+
+
 from enum import Enum
 
 class Categories(Enum):
@@ -29,6 +39,7 @@ class EntryStep(Enum):
     DATE = 2
     ITEM_LIST = 3
     NOTES = 4
+    QUIT = 5
 
 BACK_COMMAND = 'back'
 QUIT_COMMAND = 'quit'
@@ -37,7 +48,7 @@ CAT_CODE_LENGTH = 3
 CATEGORIES_INDEX_INDEX = 0
 CATEGORIES_TEXT_INDEX = 1
 
-def stageListGen():
+def stagedListGen():
     staged_list = []
 
     # To Do: Make a function to print this out exactly how the final email will be formatted.
@@ -46,10 +57,8 @@ def stageListGen():
             staged_list.append([category.value])
 
     while True:
-
         print('')
         print(staged_list)
-
         print('\nStaged List Generator\n')
         print('1. Entry Mode')
         print('2. Edit Mode')
@@ -80,20 +89,7 @@ def entryMode(staged_list):
 
         match(entry_step):
             case EntryStep.ORDER_NUMBER:
-                print('')
-                print(staged_list)
-                print('\nEntry Mode\n')
-                print('Follow the prompts to add entries to the staged list.')
-                print('"back" can be entered at any time to go back to the previous question')
-                print('"quit" can be entered at any time to return to the previous menu\n')
-
-                order_number = input('Enter an SO number: ')
-
-                if len(order_number) == 7 and order_number.isdecimal:
-                    current_entry[EntryStep.ORDER_NUMBER] = order_number
-                    entry_step = EntryStep.CATEGORY
-                elif order_number.lower() == BACK_COMMAND or order_number.lower() == QUIT_COMMAND:
-                    return
+                entry_step = get_order_number(staged_list, current_entry)
                 continue
 
             case EntryStep.CATEGORY:
@@ -161,7 +157,10 @@ def entryMode(staged_list):
                     current_entry[EntryStep.CATEGORY] != Categories.NUC):
                         current_entry[EntryStep.CATEGORY] = None
                 elif current_item.lower() == BACK_COMMAND:
-                    entry_step = EntryStep.DATE
+                    if current_entry[EntryStep.CATEGORY] == Categories.PREBUILD:
+                        entry_step = EntryStep.CATEGORY
+                    else:
+                        entry_step = EntryStep.DATE
                 elif current_item.lower() == QUIT_COMMAND:
                     return
                 elif current_item == '':
@@ -192,6 +191,26 @@ def entryMode(staged_list):
                     staged_list[current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX]].append(current_entry)
                     return
                 continue
+
+            case EntryStep.QUIT:
+                return
+
+def get_order_number(staged_list, current_entry):
+    print('')
+    print(staged_list)
+    print('\nEntry Mode\n')
+    print('Follow the prompts to add entries to the staged list.')
+    print('"back" can be entered at any time to go back to the previous question')
+    print('"quit" can be entered at any time to return to the previous menu\n')
+
+    order_number = input('Enter an SO number: ')
+
+    if len(order_number) == 7 and order_number.isdecimal:
+        current_entry[EntryStep.ORDER_NUMBER] = order_number
+        return EntryStep.CATEGORY
+    elif order_number.lower() == BACK_COMMAND or order_number.lower() == QUIT_COMMAND:
+        return EntryStep.QUIT
+    return EntryStep.ORDER_NUMBER
 
 def assign_category(first_item):
         # Apparantly you can't access individual items inside tuples that are part of an Enum in a match statement?
@@ -228,3 +247,5 @@ def get_entry_text(current_entry):
         raise Exception("Error: get_entry_text should not be called with an dict full of Nones")
     return output
     
+def print_list(staged_list):
+    pass

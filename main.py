@@ -9,7 +9,7 @@
 # and missing parts and sorts it into a list for my biweekly emails.
 
 from mapFormatter import mapFormatter
-from stageListGen import stageListGen
+from stagedListGen import stagedListGen
 
 def main():
 
@@ -23,7 +23,7 @@ def main():
         if selection == '1':
             mapFormatter()
         if selection == '2':
-            stageListGen()
+            stagedListGen()
         if selection == '3':
             return
 
