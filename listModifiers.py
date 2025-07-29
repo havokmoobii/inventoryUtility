@@ -10,7 +10,9 @@ from constants import (Categories, EntryStep, BACK_COMMAND, QUIT_COMMAND,
 def get_order_number(staged_list, current_entry):
     order_number = input('Enter an SO number: ')
 
-    if len(order_number) == 7 and order_number.isdecimal:
+    if in_list(staged_list, order_number):
+        print('Error: Order is already listed!')
+    elif len(order_number) == 7 and order_number.isdecimal:
         current_entry[EntryStep.ORDER_NUMBER] = order_number
         return EntryStep.CATEGORY
     elif order_number.lower() == BACK_COMMAND or order_number.lower() == QUIT_COMMAND:
@@ -107,7 +109,7 @@ def get_item_list(current_entry, item_list):
             current_entry[EntryStep.ITEM_LIST] = item_list
             return EntryStep.ITEM_LIST, item_list
         
-def get_notes(staged_list, current_entry):
+def get_notes(current_entry):
     notes = input('\nEnter any additional notes about the order: ')
 
     if notes.lower() == BACK_COMMAND:
@@ -117,8 +119,7 @@ def get_notes(staged_list, current_entry):
     else:
         if notes != "":
             current_entry[EntryStep.NOTES] = notes
-        staged_list[current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX]].append(current_entry)
-        return EntryStep.QUIT
+        return EntryStep.DONE
 
 def assign_category(first_item):
         # Apparantly you can't access individual items inside tuples that are part of an Enum in a match statement?
@@ -140,3 +141,19 @@ def assign_category(first_item):
         case 'POW':
             return Categories.POW
     return Categories.MISC
+
+def in_list(staged_list, order_number):
+    for category in staged_list:
+        if len(category) > 1:
+            for i in range(1, len(category)):
+                if category[i][EntryStep.ORDER_NUMBER] == order_number:
+                    return True
+    return False
+
+def get_order_location(staged_list, order_number):
+    for category in staged_list:
+        if len(category) > 1:
+            for i in range(1, len(category)):
+                if category[i][EntryStep.ORDER_NUMBER] == order_number:
+                    return (category[0][CATEGORIES_INDEX_INDEX], i)
+    raise Exception("Error: Get order location should be called after the order is verified to be in the staged list by in_list.")

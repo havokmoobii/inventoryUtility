@@ -5,17 +5,20 @@
 # Staged list will build a list of lists of dictionaries.
 
 # Next Time: Work on Edit Mode. It can reuse a lot of the entry mode code. Probably
-# have it list all the entrys, have the user choose to edit or delete a selected entry,
+# have it list all the entries, have the user choose to edit or delete a selected entry,
 # and make it current_entry if they select edit and work through the entry step process from there.
+# Also remove pycache from git
 # Idea: Make the list save itself to a file regularly, so progress cannot be lost.
 
-from constants import Categories, EntryStep, CATEGORIES_TEXT_INDEX
-from listModifiers import get_order_number, get_category, get_date, get_item_list, get_notes
+from constants import (Categories, EntryStep, CATEGORIES_TEXT_INDEX, CATEGORIES_INDEX_INDEX, 
+                       ORDER_LOC_CATEGORY_INDEX, ORDER_LOC_INNER_INDEX, QUIT_COMMAND,
+                       CAT_CODE_LENGTH)
+from listModifiers import (get_order_number, get_category, get_date, get_item_list, get_notes,
+                           in_list, get_order_location, assign_category)
 
 def stagedListGen():
     staged_list = []
 
-    # To Do: Make a function to print this out exactly how the final email will be formatted.
     for category in Categories:
         if category != Categories.MAX_CATEGORIES:
             staged_list.append([category.value])
@@ -33,7 +36,7 @@ def stagedListGen():
         if selection == '1':
             entryMode(staged_list)
         if selection == '2':
-            pass
+            editMode(staged_list)
         if selection == '3':
             return
 
@@ -72,9 +75,133 @@ def entryMode(staged_list):
                 entry_step, item_list = get_item_list(current_entry, item_list)
                 continue
             case EntryStep.NOTES:
-                entry_step = get_notes(staged_list, current_entry)
+                entry_step = get_notes(current_entry)
                 continue
+            case EntryStep.DONE:
+                staged_list[current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX]].append(current_entry)
+                return
             case EntryStep.QUIT:
+                return
+            
+def editMode(staged_list):
+    while True:
+        current_entry = None
+        order_location = None
+
+        print('\n')
+        print_list(staged_list)
+        order_number = input('\nEnter the order number to edit or "quit" to exit: ')
+        if order_number.lower() == QUIT_COMMAND:
+            return
+        if len(order_number) == 7 and order_number.isdecimal:
+            if in_list(staged_list, order_number):
+                order_location = get_order_location(staged_list, order_number)
+                current_entry = staged_list[order_location[ORDER_LOC_CATEGORY_INDEX]][order_location[ORDER_LOC_INNER_INDEX]]
+
+                while(True):
+                    print(f'\n{get_entry_text(current_entry)}\n')
+                    print('1. Edit Entry')
+                    print('2. Delete Entry')
+                    print('3. Exit')
+
+                    selection = input('\nEnter the number of your selection: ')
+
+                    if selection == '1':
+                        current_entry = staged_list[order_location[ORDER_LOC_CATEGORY_INDEX]].pop(order_location[ORDER_LOC_INNER_INDEX])
+                        edit_entry(staged_list, current_entry)
+                        break
+                    if selection == '2':
+                        staged_list[order_location[ORDER_LOC_CATEGORY_INDEX]].pop(order_location[ORDER_LOC_INNER_INDEX])
+                        break
+                    if selection == '3':
+                        break
+            else:
+                print('\nError: Order is not listed.')
+        else:
+            print('\nError: Invalid Order Number.')
+
+def edit_entry(staged_list, current_entry):
+    entry_step = EntryStep.PROMPT
+    item_list = current_entry[EntryStep.ITEM_LIST]
+
+    while True:
+        print(f'\nCurrent Entry: {get_entry_text(current_entry)}')
+
+        match(entry_step):
+            case EntryStep.PROMPT:
+                print('\nEdit Mode\n')
+                print('1. Order Number')
+                print('2. Category')
+                print('3. Date')
+                print('4. Item List')
+                print('5. Notes')
+                print('6. Save and Quit')
+
+                selection = input('\nEnter the number of your selection: ')
+
+                match(selection):
+                    case '1':
+                        entry_step = EntryStep.ORDER_NUMBER
+                        continue
+                    case '2':
+                        entry_step = EntryStep.CATEGORY
+                        continue
+                    case '3':
+                        entry_step = EntryStep.DATE
+                        continue
+                    case '4':
+                        entry_step = EntryStep.ITEM_LIST
+                        continue
+                    case '5':
+                        entry_step = EntryStep.NOTES
+                        continue
+                    case '6':
+                        entry_step= EntryStep.DONE
+                        continue
+                    case _:
+                        print('/nError: Invalid Selection!')
+                        continue
+                continue
+            case EntryStep.ORDER_NUMBER:
+                entry_step = get_order_number(staged_list, current_entry)
+                if entry_step == EntryStep.CATEGORY:
+                    entry_step = EntryStep.PROMPT
+                continue
+            case EntryStep.CATEGORY:
+                entry_step = get_category(current_entry)
+                if entry_step == EntryStep.DATE:
+                    entry_step = EntryStep.PROMPT
+
+                if current_entry[EntryStep.CATEGORY] == None:
+                    if len(item_list) >= CAT_CODE_LENGTH:
+                        current_entry[EntryStep.CATEGORY] = assign_category(item_list[:CAT_CODE_LENGTH])
+                    else:
+                        current_entry[EntryStep.CATEGORY] = Categories.MISC
+                continue
+            case EntryStep.DATE:
+                if current_entry[EntryStep.CATEGORY] == Categories.PREBUILD:
+                    print("\nError: Prebuild date should be None.")
+                    entry_step = EntryStep.PROMPT
+                else:
+                    entry_step = get_date(current_entry)
+                    if entry_step == EntryStep.ITEM_LIST:
+                        entry_step = EntryStep.PROMPT
+                continue
+            case EntryStep.ITEM_LIST:
+                entry_step, item_list = get_item_list(current_entry, item_list)
+                if entry_step == EntryStep.NOTES:
+                    entry_step = EntryStep.PROMPT
+                continue
+            case EntryStep.NOTES:
+                entry_step = get_notes(current_entry)
+                if entry_step == EntryStep.DONE:
+                    entry_step = EntryStep.PROMPT
+                continue
+            case EntryStep.DONE:
+                staged_list[current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX]].append(current_entry)
+                return
+            case EntryStep.QUIT:
+                staged_list[current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX]].append(current_entry)
                 return
 
 def get_entry_text(current_entry):
