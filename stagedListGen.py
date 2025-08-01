@@ -4,12 +4,6 @@
 
 # Staged list will build a list of lists of dictionaries.
 
-# Next Time: Work on Edit Mode. It can reuse a lot of the entry mode code. Probably
-# have it list all the entries, have the user choose to edit or delete a selected entry,
-# and make it current_entry if they select edit and work through the entry step process from there.
-# Also remove pycache from git
-# Idea: Make the list save itself to a file regularly, so progress cannot be lost.
-
 from constants import (Categories, EntryStep, CATEGORIES_TEXT_INDEX, CATEGORIES_INDEX_INDEX, 
                        ORDER_LOC_CATEGORY_INDEX, ORDER_LOC_INNER_INDEX, QUIT_COMMAND,
                        CAT_CODE_LENGTH)
@@ -17,11 +11,7 @@ from listModifiers import (get_order_number, get_category, get_date, get_item_li
                            in_list, get_order_location, assign_category)
 
 def stagedListGen():
-    staged_list = []
-
-    for category in Categories:
-        if category != Categories.MAX_CATEGORIES:
-            staged_list.append([category.value])
+    staged_list = read_list_file()
 
     while True:
         print('\n')
@@ -79,6 +69,7 @@ def entryMode(staged_list):
                 continue
             case EntryStep.DONE:
                 staged_list[current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX]].append(current_entry)
+                write_list_file(staged_list)
                 return
             case EntryStep.QUIT:
                 return
@@ -115,6 +106,7 @@ def editMode(staged_list):
                         break
                     if selection == '3':
                         break
+                write_list_file(staged_list)
             else:
                 print('\nError: Order is not listed.')
         else:
@@ -224,4 +216,83 @@ def print_list(staged_list):
         if len(category) > 1:
             for i in range(1, len(category)):
                 print(get_entry_text(category[i]))
-            print("")
+            print('')
+
+def write_list_file(staged_list):
+    with open('staged_list.txt', 'w') as f:
+        for category in staged_list:
+            if len(category) > 1:
+                for i in range(1, len(category)):
+                    f.write(f'<{category[i][EntryStep.ORDER_NUMBER]}>')
+                    f.write(f'<{category[i][EntryStep.CATEGORY]}>')
+                    f.write(f'<{category[i][EntryStep.DATE]}>')
+                    f.write(f'<{category[i][EntryStep.ITEM_LIST]}>')
+                    f.write(f'<{category[i][EntryStep.NOTES]}>')
+                    f.write('\n')
+
+def read_list_file():
+    staged_list = []
+    raw_list = ''
+
+    for category in Categories:
+        if category != Categories.MAX_CATEGORIES:
+            staged_list.append([category.value])
+    try:
+        with open('staged_list.txt', 'r') as f:
+            raw_list = f.read()
+    except:
+        print('\nstaged_list.txt either does not exist or cannot be read. Creating new list.')
+        return staged_list
+
+    orders = raw_list.split('\n')
+    
+    for order in orders:
+        if len(order) > 0:
+            current_entry = {EntryStep.ORDER_NUMBER: None,
+                        EntryStep.CATEGORY: None,
+                        EntryStep.DATE: None,
+                        EntryStep.ITEM_LIST: None,
+                        EntryStep.NOTES: None,
+                        }
+            order_parts = order.strip('<').strip('>').split('><')
+            current_entry[EntryStep.ORDER_NUMBER] = order_parts[0]
+            match(order_parts[1]):
+                case('Categories.PREBUILD'):
+                    current_entry[EntryStep.CATEGORY] = Categories.PREBUILD
+                case('Categories.OPENLOOP'):
+                    current_entry[EntryStep.CATEGORY] = Categories.OPENLOOP
+                case('Categories.SERVER'):
+                    current_entry[EntryStep.CATEGORY] = Categories.SERVER
+                case('Categories.LAPTOP'):
+                    current_entry[EntryStep.CATEGORY] = Categories.LAPTOP
+                case('Categories.NUC'):
+                    current_entry[EntryStep.CATEGORY] = Categories.NUC
+                case('Categories.PRC'):
+                    current_entry[EntryStep.CATEGORY] = Categories.PRC
+                case('Categories.FAN'):
+                    current_entry[EntryStep.CATEGORY] = Categories.FAN
+                case('Categories.MBD'):
+                    current_entry[EntryStep.CATEGORY] = Categories.MBD
+                case('Categories.MEM'):
+                    current_entry[EntryStep.CATEGORY] = Categories.MEM
+                case('Categories.HDR'):
+                    current_entry[EntryStep.CATEGORY] = Categories.HDR
+                case('Categories.VDO'):
+                    current_entry[EntryStep.CATEGORY] = Categories.VDO
+                case('Categories.CAS'):
+                    current_entry[EntryStep.CATEGORY] = Categories.CAS
+                case('Categories.POW'):
+                    current_entry[EntryStep.CATEGORY] = Categories.POW
+                case('Categories.MISC'):
+                    current_entry[EntryStep.CATEGORY] = Categories.MISC
+                case _:
+                    raise Exception('\nError: Invalid Category\n')
+            if order_parts[2] != 'None':
+                current_entry[EntryStep.DATE] = order_parts[2]
+            if order_parts[3] != 'None':
+                current_entry[EntryStep.ITEM_LIST] = order_parts[3]
+            if order_parts[4] != 'None':
+                current_entry[EntryStep.NOTES] = order_parts[4]
+            staged_list[current_entry[EntryStep.CATEGORY].value[CATEGORIES_INDEX_INDEX]].append(current_entry)
+
+    return staged_list

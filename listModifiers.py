@@ -6,12 +6,11 @@ from constants import (Categories, EntryStep, BACK_COMMAND, QUIT_COMMAND,
                        CLEAR_COMMAND, DATE_MIN_LENGTH, CAT_CODE_LENGTH,
                        CATEGORIES_INDEX_INDEX, CATEGORIES_TEXT_INDEX)
 
-
 def get_order_number(staged_list, current_entry):
     order_number = input('Enter an SO number: ')
 
     if in_list(staged_list, order_number):
-        print('Error: Order is already listed!')
+        print('\n\nError: Order is already listed!\n')
     elif len(order_number) == 7 and order_number.isdecimal:
         current_entry[EntryStep.ORDER_NUMBER] = order_number
         return EntryStep.CATEGORY
@@ -53,6 +52,7 @@ def get_category(current_entry):
         return EntryStep.ORDER_NUMBER
     elif category.lower() == QUIT_COMMAND:
         return EntryStep.QUIT
+    return EntryStep.CATEGORY
     
 def get_date(current_entry):
     date = input('\nEnter the date that the order was created: ')
@@ -63,7 +63,7 @@ def get_date(current_entry):
         return EntryStep.QUIT
     # Honestly this step is just because I keep forgetting the date step and start entering item codes.
     elif len(date) != DATE_MIN_LENGTH:
-        print("Error: Date must be in format MM/DD")
+        print("\nError: Date must be in format MM/DD")
         return EntryStep.DATE
     else:
         current_entry[EntryStep.DATE] = date
@@ -156,4 +156,4 @@ def get_order_location(staged_list, order_number):
             for i in range(1, len(category)):
                 if category[i][EntryStep.ORDER_NUMBER] == order_number:
                     return (category[0][CATEGORIES_INDEX_INDEX], i)
-    raise Exception("Error: Get order location should be called after the order is verified to be in the staged list by in_list.")
+    raise Exception("\nError: Get order location should be called after the order is verified to be in the staged list by in_list.")
